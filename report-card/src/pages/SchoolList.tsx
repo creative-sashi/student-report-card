@@ -10,7 +10,7 @@ type School = {
     logoBlobId?: string,
 };
 
-export default function SchoolPage() {
+export default function SchoolList() {
     const [schools, setSchools] = useState<School[]>([]);
     const [showForm, setShowForm] = useState(false);
 
@@ -44,7 +44,7 @@ export default function SchoolPage() {
                 {showForm && <SchoolForm onCreated={handleCreated} />}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                    {schools.map((school) => (
+                    {schools.map((school : School) => (
                         <SchoolCard key={school.id} school={school} />
                     ))}
                 </div>

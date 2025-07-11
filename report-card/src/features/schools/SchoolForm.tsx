@@ -1,25 +1,29 @@
-import React, { useState } from "react";
-import { db } from "../../bd/db";
+import React, { useState, type ChangeEvent, type FormEvent } from 'react';
+import { db } from '../../bd/db';
 
-const SchoolForm = ({ onCreated }) => {
-  const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
-  const [logoFile, setLogoFile] = useState(null);
+// Props type for optional callback
+interface SchoolFormProps {
+  onCreated?: () => void;
+}
 
-  const handleSubmit = async (e) => {
+const SchoolForm: React.FC<SchoolFormProps> = ({ onCreated }) => {
+  const [name, setName] = useState('');
+  const [address, setAddress] = useState('');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    let logoBlobId;
+    let logoBlobId: string | undefined;
+
     if (logoFile) {
       logoBlobId = `logo_${Date.now()}`;
-      const blob = new Blob([await logoFile.arrayBuffer()], {
-        type: logoFile.type,
-      });
 
+      // File is already a Blob — no need for arrayBuffer here
       await db.media.put({
         id: logoBlobId,
-        type: "logo",
-        blob,
+        type: 'logo',
+        blob: logoFile,
         fileName: logoFile.name,
         mimeType: logoFile.type,
       });
@@ -31,10 +35,15 @@ const SchoolForm = ({ onCreated }) => {
       logoBlobId,
     });
 
-    setName("");
-    setAddress("");
+    // Reset state
+    setName('');
+    setAddress('');
     setLogoFile(null);
-    onCreated?.();
+    onCreated?.(); // callback if passed
+  };
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setLogoFile(e.target.files?.[0] || null);
   };
 
   return (
@@ -69,7 +78,7 @@ const SchoolForm = ({ onCreated }) => {
         <input
           type="file"
           accept="image/*"
-          onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+          onChange={handleFileChange}
         />
       </div>
 
