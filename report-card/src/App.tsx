@@ -1,5 +1,7 @@
 // src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+// importing pages 
 import SchoolList from './pages/SchoolList';
 import ClassManager from './pages/ClassManager';
 import SchemaManager from './pages/SchemaManager';

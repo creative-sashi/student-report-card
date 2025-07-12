@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import SchoolCard from "../features/schools/SchoolCard";
-import SchoolForm from "../features/schools/SchoolForm";
-import { db } from "../bd/db";
 
-type School = {
-  id?: number | string | undefined | any;
-  name: string,
-  address: string,
-  logoBlobId?: string,
-};
+// importing components
+import SchoolCard, { type School } from "../features/schools/SchoolCard";
+import SchoolForm from "../features/schools/SchoolForm";
+
+// importing icons
+import Plus from "../assets/icons/Plus";
+
+// import the database instance
+import { db } from "../bd/db";
 
 export default function SchoolList() {
   const [schools, setSchools] = useState<School[]>([]);
@@ -19,7 +19,11 @@ export default function SchoolList() {
   }, []);
 
   const loadSchools = async () => {
-    const result: School[] = await db.schools.toArray();
+    const dbResult = await db.schools.toArray();
+    const result: School[] = dbResult.map((school) => ({
+      ...school,
+      id: school.id ?? "",
+    }));
     setSchools(result);
   };
 
@@ -37,16 +41,9 @@ export default function SchoolList() {
 
         <button
           onClick={() => setShowForm(!showForm)}
-          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="inline-flex cursor-pointer items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
-          <svg
-            className="w-4 h-4 stroke-current "
-            fill="none"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
+         <Plus />
           <span className=" hidden sm:block">Create New School</span>
         </button>
       </div>
@@ -71,17 +68,15 @@ export default function SchoolList() {
           </p>
           <button
             onClick={() => setShowForm(true)}
-            className="mt-6 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="mt-6 cursor-pointer inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
           >
-            <svg className="w-4 h-4 stroke-current" fill="none" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
+            <Plus />
             Create New School
           </button>
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-8">
-          {schools.map((detail: any) => (
+          {schools.map((detail: School) => (
             <SchoolCard key={detail.id} school={detail} />
           ))}
         </div>
