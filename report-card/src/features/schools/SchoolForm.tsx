@@ -1,15 +1,16 @@
 import React, { useState, type ChangeEvent, type FormEvent } from 'react';
 import { db } from '../../bd/db';
 
-// Props type for optional callback
 interface SchoolFormProps {
   onCreated?: () => void;
+  onCancel?: () => void;
 }
 
-const SchoolForm: React.FC<SchoolFormProps> = ({ onCreated }) => {
+const SchoolForm: React.FC<SchoolFormProps> = ({ onCreated, onCancel }) => {
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -18,8 +19,6 @@ const SchoolForm: React.FC<SchoolFormProps> = ({ onCreated }) => {
 
     if (logoFile) {
       logoBlobId = `logo_${Date.now()}`;
-
-      // File is already a Blob — no need for arrayBuffer here
       await db.media.put({
         id: logoBlobId,
         type: 'logo',
@@ -29,65 +28,92 @@ const SchoolForm: React.FC<SchoolFormProps> = ({ onCreated }) => {
       });
     }
 
-    await db.schools.add({
-      name,
-      address,
-      logoBlobId,
-    });
+    await db.schools.add({ name, address, logoBlobId });
 
-    // Reset state
     setName('');
     setAddress('');
     setLogoFile(null);
-    onCreated?.(); // callback if passed
+    setLogoPreview(null);
+    onCreated?.();
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setLogoFile(e.target.files?.[0] || null);
+    const file = e.target.files?.[0];
+    setLogoFile(file || null);
+    setLogoPreview(file ? URL.createObjectURL(file) : null);
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white p-4 rounded shadow mb-6 space-y-4"
-    >
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label className="block font-medium mb-1">School Name</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">School Name</label>
         <input
           type="text"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full border border-gray-300 rounded px-3 py-2"
+          className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
+      {/* Address */}
       <div>
-        <label className="block font-medium mb-1">Location / Address</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
         <input
           type="text"
           required
           value={address}
           onChange={(e) => setAddress(e.target.value)}
-          className="w-full border border-gray-300 rounded px-3 py-2"
+          className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
-      <div>
-        <label className="block font-medium mb-1">School Logo (optional)</label>
+      {/* Logo Upload with Preview */}
+        <div className="relative w-full sm:w-64 aspect-square rounded-xl overflow-hidden border border-dashed border-slate-300 bg-slate-50 shadow-sm hover:shadow-md transition cursor-pointer group">
+        {/* Actual input */}
         <input
           type="file"
           accept="image/*"
           onChange={handleFileChange}
+          className="absolute inset-0 opacity-0 cursor-pointer z-10"
         />
-      </div>
 
-      <button
-        type="submit"
-        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-      >
-        Save School
-      </button>
+        {/* Preview or placeholder */}
+        {logoPreview ? (
+          <img
+            src={logoPreview}
+            alt="Logo Preview"
+            className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm font-medium">
+            Upload Logo
+          </div>
+        )}
+
+        {/* Hover overlay */}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center pointer-events-none z-20">
+          <span className="text-white text-sm font-semibold">Change Logo</span>
+        </div>
+      </div>
+  
+
+      {/* Actions */}
+      <div className="flex justify-end gap-3 pt-4">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 rounded-md text-sm text-slate-600 hover:bg-slate-100 cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm shadow-sm cursor-pointer"
+        >
+          Save School
+        </button>
+      </div>
     </form>
   );
 };
