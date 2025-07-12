@@ -1,44 +1,13 @@
 import { Link } from "react-router-dom"
 
-const features = [
-    {
-        title: "Create Your School",
-        description:
-            "Set up your school profile instantly with custom identity and branding support.",
-    },
-    {
-        title: "Classroom Structure",
-        description:
-            "Build classes and sections that match your school’s unique hierarchy.",
-    },
-    {
-        title: "Schema-Based Templates",
-        description:
-            "Design marksheets with subjects, grading rules, and layout templates.",
-    },
-    {
-        title: "Add Students to Class",
-        description:
-            "Assign students easily to the correct classes based on your schema.",
-    },
-    {
-        title: "Print Digital Marksheet",
-        description:
-            "Generate print-ready marksheets automatically from your schema.",
-    },
-    {
-        title: "100% Free Access",
-        description:
-            "No hidden fees. All features available from the start—free for schools.",
-    },
-];
-
+//importing constants
+import { features } from "../constants/feature"
 
 function Home() {
     return (
         <div >
             <section className="px-0 sm:px-6 lg:px-8 py-24 max-w-5xl mx-auto text-center">
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+                <h1 className="text-4xl sm:text-5xl md:text-7   xl  tracking-wide font-extrabold leading-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
                     Smart School<br className="sm:hidden" /> Marksheet Management
                 </h1>
                 <p className="mt-6 text-base sm:text-lg md:text-xl text-slate-600 max-w-2xl mx-auto">

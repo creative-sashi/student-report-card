@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { db } from "../../bd/db";
 import { useNavigate } from "react-router-dom";
 
-interface School {
-  id: number | string | undefined | any;
+export interface School {
+  id: number | string;
   name: string;
   address: string;
   logoBlobId?: number | string;
 }
 
-interface SchoolCardProps {
+export interface SchoolCardProps {
   school: School;
 }
 

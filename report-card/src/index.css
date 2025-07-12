@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+
+@font-face {
+  font-family: 'Almarena';
+  src: url('/fonts/Almarena2.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg-color : #f0f0f0;
   --primary-color: #1a237e; /* Deep Indigo */
@@ -7,18 +16,22 @@
   --text-color: #111;
   --border-color: #e0e0e0;
   --heading-font: 'Segoe UI', sans-serif;
-  --body-font: 'Inter', sans-serif;
   --logo-size: 80px;
   --frame-padding: 24px;
   --marksheet-width: 794px; /* ~A4 width at 96dpi */
   --font-scale: 1rem;
+  --font-body: 'Almarena', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
 }
- 
+
+html {
+  scroll-behavior: smooth;
+}
 
 body {
-  background-color: var(--bg-color);
-  font-family: var(--body-font);
   margin: 0;
+  transition: background-color 0.6s ease, color 0.6s ease;
+  font-family: var(--font-body);
+  background-color: var(--bg-color);
 }
 
 @media print {
