@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
-    "test": "vitest run"   
+    "test": "vitest run"
   },
   "dependencies": {
     "@rjsf/core": "^5.24.12",
@@ -20,7 +20,8 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.3",
-    "tailwindcss": "^4.1.11"
+    "tailwindcss": "^4.1.11",
+    "yup": "^1.6.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
