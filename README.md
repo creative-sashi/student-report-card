@@ -17,20 +17,6 @@ A dynamic form builder and student marksheet management system built with **Reac
 - ✅ IndexedDB (Dexie.js) for persistent local storage
 - ✅ Meta (shadcn-inspired) clean design with responsive layout
 
-## 📂 Folder Structure
-
-src/
-│
-├── bd/
-│ └── db.ts # Dexie-based IndexedDB config
-│
-├── pages/
-│ ├── SchemaBuilder.tsx # Dynamic marksheet schema creation UI
-│ ├── MarksheetForm.tsx # Form rendered using the schema (Formik)
-│ └── ClassManager.tsx # School class-level navigation
-│
-├── App.tsx
-└── main.tsx
 
 markdown
 Copy
