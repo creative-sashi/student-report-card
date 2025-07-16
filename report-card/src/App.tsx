@@ -9,6 +9,7 @@ import SchemaBuilder from './pages/SchemaBuilder';
 import Home from './pages/Home';
 
 
+// initial routing here
 export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f0f4ff] to-[#e0e7ff] text-gray-800 p-4 md:p-8">

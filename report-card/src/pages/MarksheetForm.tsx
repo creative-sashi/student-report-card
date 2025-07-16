@@ -11,6 +11,7 @@ interface FieldSchema {
   required: boolean;
 }
 
+
 interface SubjectSchema {
   subjectName: string;
   maxMarks: number;
