@@ -28,7 +28,7 @@ const ClassManager = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200/60 py-10 px-4 sm:px-8">
+    <div>
       <div className="max-w-5xl mx-auto">
         <div className="mb-10 flex items-center justify-between flex-wrap gap-4">
           <div>

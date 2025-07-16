@@ -1,76 +1,153 @@
-// src/pages/MarksheetForm.tsx
-import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { db } from '../bd/db';
-import Form from '@rjsf/core';
-import validator from '@rjsf/validator-ajv8';
+import * as Yup from 'yup';
+
+interface FieldSchema {
+  label: string;
+  fieldKey: string;
+  type: string;
+  required: boolean;
+}
+
+interface SubjectSchema {
+  subjectName: string;
+  maxMarks: number;
+}
+
+interface ExamSchema {
+  term: string;
+  subjects: SubjectSchema[];
+}
+
+interface MarksheetSchema {
+  id?: number;
+  name: string;
+  classId: number;
+  schemaJson: {
+    header: string;
+    footer: string;
+    fields: FieldSchema[];
+    exams: ExamSchema[];
+  };
+}
+
+interface FormValues {
+  [key: string]: string | number;
+}
 
 const MarksheetForm = () => {
-  const { schemaId } = useParams();
-  const [schemaData, setSchemaData] = useState<any>(null);
-  const [formData, setFormData] = useState<any>(null);
+  const { schemaId } = useParams<{ schemaId: string }>();
+  const [schema, setSchema] = useState<MarksheetSchema | null>(null);
 
   useEffect(() => {
     if (schemaId) {
-      db.marksheetSchemas.get(Number(schemaId)).then(setSchemaData);
+      db.marksheetSchemas.get(Number(schemaId)).then((result) => setSchema(result ?? null));
     }
   }, [schemaId]);
 
-  const handleSubmit = async ({ formData }: any) => {
-    if (!schemaData) return;
+  if (!schema) return <div className="p-6 text-gray-600">Loading schema...</div>;
 
-    const studentId = await db.students.add({
-      classId: schemaData.classId,
-      marksheetSchemaId: Number(schemaId),
-      studentInfo: formData,
-      marks: {}, // You can separate marks if needed
-    });
-
-    setFormData(formData);
+  const initialValues: FormValues = {
+    ...schema.schemaJson.fields.reduce((acc, field) => {
+      acc[field.fieldKey] = '';
+      return acc;
+    }, {} as FormValues),
+    ...schema.schemaJson.exams.reduce((acc, exam) => {
+      exam.subjects.forEach((sub) => {
+        acc[`marks_${exam.term}_${sub.subjectName}`] = '';
+      });
+      return acc;
+    }, {} as FormValues)
   };
 
+  const validationSchema = Yup.object(
+    schema.schemaJson.fields.reduce((acc, field) => {
+      if (field.required) {
+        acc[field.fieldKey] = Yup.string().required(`${field.label} is required`);
+      } else {
+        acc[field.fieldKey] = Yup.string();
+      }
+      return acc;
+    }, {} as Record<string, Yup.StringSchema>)
+  );
 
-  if (!schemaData) return <div className="p-4">Loading schema...</div>;
-  const cleanedUiSchema = { ...schemaData.uiSchemaJson };
-
-  Object.entries(schemaData.schemaJson?.properties || {}).forEach(([key, def]: any) => {
-    const type = def.type;
-    const widget = cleanedUiSchema?.[key]?.['ui:widget'];
-
-    const validWidgets = {
-      string: ['text', 'textarea', 'password'],
-      number: ['updown', 'range'],
-      boolean: ['checkbox', 'radio'],
-    };
-
-    if (widget && !validWidgets[type]?.includes(widget)) {
-      delete cleanedUiSchema[key]['ui:widget']; // fallback to default
-    }
-  });
-
+  const handleSubmit = (values: FormValues) => {
+    console.log('Submitted Values:', values);
+    // TODO: Save student data to IDB & render preview
+  };
 
   return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">Enter Student Info - {schemaData.name}</h1>
+    <div className="p-6 max-w-6xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6 text-slate-800">
+        📝 {schema.schemaJson.header || schema.name}
+      </h1>
 
-      {!formData ? (
-        <Form
-          schema={schemaData.schemaJson}
-          uiSchema={cleanedUiSchema}
-          validator={validator}
-          onSubmit={handleSubmit}
-        />
-
-      ) : (
-        <div className="mt-6">
-          <h2 className="text-lg font-semibold mb-2">Marksheet Preview</h2>
-          <div className="border p-4 bg-white rounded shadow w-full max-w-md">
-            {Object.entries(formData).map(([key, value]) => (
-              <div key={key} className="mb-2">
-                <strong>{key}</strong>: {String(value)}
+      <Formik
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+      >
+        <Form className="space-y-10">
+          <div className="grid gap-6 sm:grid-cols-2">
+            {schema.schemaJson.fields.map((field) => (
+              <div key={field.fieldKey}>
+                <label className="block font-medium text-sm text-slate-700 mb-1">
+                  {field.label}
+                </label>
+                <Field
+                  type={field.type === 'date' ? 'date' : field.type}
+                  name={field.fieldKey}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+                <ErrorMessage
+                  name={field.fieldKey}
+                  component="div"
+                  className="text-red-500 text-sm mt-1"
+                />
               </div>
             ))}
           </div>
+
+          <div className="space-y-10">
+            {schema.schemaJson.exams.map((exam, examIdx) => (
+              <div key={examIdx} className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <h2 className="text-lg font-semibold text-blue-800 mb-4">
+                  📘 {exam.term} Examination
+                </h2>
+                <div className="grid gap-6 sm:grid-cols-2">
+                  {exam.subjects.map((subject, idx) => (
+                    <div key={idx}>
+                      <label className="block font-medium text-sm text-slate-700 mb-1">
+                        {subject.subjectName} (Max: {subject.maxMarks})
+                      </label>
+                      <Field
+                        type="number"
+                        name={`marks_${exam.term}_${subject.subjectName}`}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-right">
+            <button
+              type="submit"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-md shadow-sm text-sm"
+            >
+              💾 Save & Preview
+            </button>
+          </div>
+        </Form>
+      </Formik>
+
+      {schema.schemaJson.footer && (
+        <div className="mt-10 text-slate-500 italic text-sm">
+          {schema.schemaJson.footer}
         </div>
       )}
     </div>
