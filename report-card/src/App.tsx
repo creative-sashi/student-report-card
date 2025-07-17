@@ -7,6 +7,7 @@ import ClassManager from './pages/ClassManager';
 import MarksheetForm from './pages/MarksheetForm';
 import SchemaBuilder from './pages/SchemaBuilder';
 import Home from './pages/Home';
+import StudentList from './pages/StudentList';
 
 
 // initial routing here
@@ -22,7 +23,7 @@ export default function App() {
             <Route path="/schools/:schoolId/classes/:classId" element={<SchemaBuilder />} />
             <Route
               path="/schools/:schoolId/classes/:classId/schemas/:schemaId"
-              element={<MarksheetForm />}
+              element={<StudentList />}
             />
           </Routes>
         </Router>
