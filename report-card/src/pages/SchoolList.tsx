@@ -9,6 +9,7 @@ import Plus from "../assets/icons/Plus";
 
 // import the database instance
 import { db } from "../bd/db";
+import { exportSchoolData, importSchoolData } from "../utils/exportImport";
 
 export default function SchoolList() {
   const [schools, setSchools] = useState<School[]>([]);
@@ -39,13 +40,45 @@ export default function SchoolList() {
           🏫 Schools
         </h1>
 
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="inline-flex cursor-pointer items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-        >
-         <Plus />
-          <span className=" hidden sm:block">Create New School</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="cursor-pointer inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium px-4 py-2 rounded-full shadow-sm focus:ring-2 focus:ring-blue-400">
+            📥 Import JSON
+            <input
+              type="file"
+              accept="application/json"
+              className="hidden" // hides the default file input
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  console.log("Importing file:", file.name);
+                  importSchoolData(file)
+                    .then(() => {
+                      alert("Data imported successfully!");
+                      loadSchools();
+                    })
+                    .catch((err) => alert("Failed to import: " + err.message));
+                }
+              }}
+            />
+          </label>
+
+          {/* Export */}
+          <button
+            onClick={exportSchoolData}
+            className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium px-4 py-2 rounded-full shadow-sm focus:ring-2 focus:ring-blue-400"
+          >
+            📤 Export JSON
+          </button>
+
+          {/* Create School */}
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="inline-flex cursor-pointer items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            <Plus />
+            <span className="hidden sm:block">Create New School</span>
+          </button>
+        </div>
       </div>
 
       {showForm && (
