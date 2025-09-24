@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
-import { db } from '../bd/db';
 import * as Yup from 'yup';
+import { db } from '../bd/db';
 
 interface FieldSchema {
   label: string;
@@ -10,7 +10,6 @@ interface FieldSchema {
   type: string;
   required: boolean;
 }
-
 
 interface SubjectSchema {
   subjectName: string;
@@ -38,8 +37,6 @@ interface FormValues {
   [key: string]: string | number;
 }
 
-// sanitize the field keys to be valid JS identifiers
-// e.g. "Mid Term" → "Mid_Term", "Final Exam" →
 const sanitizeKey = (value: string) =>
   value.replace(/[^a-zA-Z0-9]/g, '_');
 
@@ -52,6 +49,8 @@ const MarksheetForm = ({ onCreated, onCancel }: MarksheetFormProps) => {
   const { schemaId } = useParams<{ schemaId: string }>();
   const [schema, setSchema] = useState<MarksheetSchema | null>(null);
   const [percentage, setPercentage] = useState<number | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
     if (schemaId) {
@@ -73,11 +72,16 @@ const MarksheetForm = ({ onCreated, onCancel }: MarksheetFormProps) => {
       });
       return acc;
     }, {} as FormValues)
-
   };
 
-  const validationSchema = Yup.object().shape(
-    Object.fromEntries(
+  const validationSchema = Yup.object().shape({
+    ...Object.fromEntries(
+      schema.schemaJson.fields.filter(f => f.required).map((field: any) => [
+        field.fieldKey,
+        Yup.string().required(`${field.label} is required`)
+      ])
+    ),
+    ...Object.fromEntries(
       schema.schemaJson.exams.flatMap((exam: any) =>
         exam.subjects.map((subject: any) => [
           `marks_${sanitizeKey(exam.term)}_${sanitizeKey(subject.subjectName)}`,
@@ -89,26 +93,23 @@ const MarksheetForm = ({ onCreated, onCancel }: MarksheetFormProps) => {
         ])
       )
     )
-  );
+  });
 
-
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: any, { resetForm }: any) => {
     try {
-      // 1. Extract student details
+      const studentFields = schema.schemaJson.fields.reduce((acc, field) => {
+        acc[field.fieldKey] = values[field.fieldKey];
+        return acc;
+      }, {} as any);
+
       const studentPayload = {
         classId: schema.classId,
-        name: values.name,
-        fatherName: values.fatherName,
-        dob: values.dob,
-        class: values.class,
-        rollNo: values.rollNo,
+        ...studentFields,
         createdAt: new Date(),
       };
 
-      // 2. Save student → get `studentId`
       const studentId = await db.students.add(studentPayload);
 
-      // 3. Extract marks & calculate percentage
       const marksEntries: { [key: string]: number } = {};
       let totalMarks = 0;
       let obtainedMarks = 0;
@@ -129,8 +130,7 @@ const MarksheetForm = ({ onCreated, onCancel }: MarksheetFormProps) => {
 
       const percentage = totalMarks > 0 ? (obtainedMarks / totalMarks) * 100 : 0;
 
-      // 4. Save marks
-      await db.marks.add({
+      const newMarkId = await db.marks.add({
         studentId: studentId,
         schemaId: Number(schemaId),
         entries: marksEntries,
@@ -139,35 +139,54 @@ const MarksheetForm = ({ onCreated, onCancel }: MarksheetFormProps) => {
         createdAt: new Date(),
       });
 
-
-      // 5. Optionally redirect or reset form here
-
       onCreated({
-        id: studentId,
+        id: newMarkId,
         percentage: Number(percentage.toFixed(2)),
         student: { ...studentPayload, id: studentId },
         ...marksEntries,
       });
 
-      alert('✅ Submission successful!');
+      setMessage('✅ Submission successful!');
+      setIsError(false);
+      resetForm();
 
     } catch (error) {
       console.error("❌ Submission failed", error);
-      alert('❌ Submission failed. Please try again later.');
+      setMessage('❌ Submission failed. Please try again later.');
+      setIsError(true);
     }
   };
 
-
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6 text-slate-800">
-        📝 {schema.schemaJson.header || schema.name}
-      </h1>
+    <div className="font-sans py-8 px-6 max-w-full h-[80vh] flex flex-col">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+        .font-sans {
+          font-family: 'Poppins', sans-serif;
+        }
+      `}</style>
+
+      {/* Static Header Section */}
+      <div className="border-b-2 border-gray-200 pb-6 mb-8 flex-shrink-0">
+        <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+          📝 {schema.schemaJson.header || schema.name}
+        </h1>
+        <p className="text-sm text-gray-500 mt-2">
+          Fill out the form below to create a new marksheet entry.
+        </p>
+      </div>
+
+      {message && (
+        <div className={`p-4 mb-4 rounded-xl font-medium ${isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+          {message}
+        </div>
+      )}
 
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
+        enableReinitialize={true}
       >
         {({ values }) => {
           useEffect(() => {
@@ -191,85 +210,100 @@ const MarksheetForm = ({ onCreated, onCancel }: MarksheetFormProps) => {
             } else {
               setPercentage(null);
             }
-          }, [values]);
+          }, [values, schema]);
 
           return (
-            <Form className="space-y-10">
-              <div className="grid gap-6 sm:grid-cols-2">
-                {schema.schemaJson.fields.map((field) => (
-                  <div key={field.fieldKey}>
-                    <label className="block font-medium text-sm text-slate-700 mb-1">
-                      {field.label}
-                    </label>
-                    <Field
-                      type={field.type === 'date' ? 'date' : field.type}
-                      name={field.fieldKey}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    />
-                    <ErrorMessage
-                      name={field.fieldKey}
-                      component="div"
-                      className="text-red-500 text-sm mt-1"
-                    />
+            <Form className="flex flex-col flex-1 space-y-8 overflow-auto overflow-x-hidden">
+              {/* Scrollable Form Content */}
+              <div className="space-y-8 p-1 -m-1">
+                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200">
+                  <h3 className="text-xl font-semibold text-teal-700 mb-4">Student Information</h3>
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    {schema.schemaJson.fields.map((field) => (
+                      <div key={field.fieldKey}>
+                        <label className="block font-medium text-sm text-slate-700 mb-1">
+                          {field.label}
+                        </label>
+                        <Field
+                          type={field.type === 'date' ? 'date' : field.type}
+                          name={field.fieldKey}
+                          className="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm transition-colors"
+                        />
+                        <ErrorMessage
+                          name={field.fieldKey}
+                          component="div"
+                          className="text-red-500 text-sm mt-1"
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-
-              <div className="space-y-10">
-                {schema.schemaJson.exams.map((exam, examIdx) => (
-                  <div key={examIdx} className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <h2 className="text-lg font-semibold text-blue-800 mb-4">
-                      📘 {exam.term} Examination
-                    </h2>
-                    <div className="grid gap-6 sm:grid-cols-2">
-                      {exam.subjects.map((subject, idx) => (
-                        <div key={idx}>
-                          <label className="block font-medium text-sm text-slate-700 mb-1">
-                            {subject.subjectName} (Max: {subject.maxMarks})
-                          </label>
-                          <Field
-                            type="number"
-                            name={`marks_${sanitizeKey(exam.term)}_${sanitizeKey(subject.subjectName)}`}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {percentage !== null && (
-                <div className="text-right text-blue-700 font-medium text-sm mb-2">
-                  📊 Current Total: {percentage}% achieved
                 </div>
-              )}
 
-              <div className="text-right">
-                <button
-                  type="button"
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded mr-2"
-                  onClick={onCancel}
-                >
-                  ❌ Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-md shadow-sm text-sm"
-                >
-                  💾 Save & Preview
-                </button>
+                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200">
+                  <h3 className="text-xl font-semibold text-teal-700 mb-4">Marks Entry</h3>
+                  <div className="space-y-6">
+                    {schema.schemaJson.exams.map((exam, examIdx) => (
+                      <div key={examIdx} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h4 className="text-lg font-semibold text-blue-800 mb-4">
+                          📘 {exam.term} Examination
+                        </h4>
+                        <div className="grid gap-6 sm:grid-cols-2">
+                          {exam.subjects.map((subject, idx) => (
+                            <div key={idx}>
+                              <label className="block font-medium text-sm text-slate-700 mb-1">
+                                {subject.subjectName} (Max: {subject.maxMarks})
+                              </label>
+                              <Field
+                                type="number"
+                                name={`marks_${sanitizeKey(exam.term)}_${sanitizeKey(subject.subjectName)}`}
+                                className="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm transition-colors"
+                              />
+                              <ErrorMessage
+                                name={`marks_${sanitizeKey(exam.term)}_${sanitizeKey(subject.subjectName)}`}
+                                component="div"
+                                className="text-red-500 text-sm mt-1"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Static Footer Section */}
+              <div className="mt-8 pt-6 border-t-2 border-gray-200 flex-shrink-0">
+                {percentage !== null && (
+                  <div className="text-center bg-blue-100 text-blue-700 font-bold text-lg p-4 rounded-xl mb-4">
+                    📊 Overall Percentage: {percentage}%
+                  </div>
+                )}
+                <div className="flex justify-end gap-4">
+                  <button
+                    type="button"
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-6 py-3 rounded-full shadow transition-colors"
+                    onClick={onCancel}
+                  >
+                    ❌ Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="inline-block bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold text-lg px-8 py-3 rounded-full shadow-md transition-colors"
+                  >
+                    💾 Save & Preview
+                  </button>
+                </div>
+                {schema.schemaJson.footer && (
+                  <div className="mt-4 text-center text-slate-500 italic text-sm">
+                    {schema.schemaJson.footer}
+                  </div>
+                )}
               </div>
             </Form>
           );
         }}
       </Formik>
-
-      {schema.schemaJson.footer && (
-        <div className="mt-10 text-slate-500 italic text-sm">
-          {schema.schemaJson.footer}
-        </div>
-      )}
     </div>
   );
 };
