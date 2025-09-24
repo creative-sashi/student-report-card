@@ -8,13 +8,14 @@ import MarksheetForm from './pages/MarksheetForm';
 import SchemaBuilder from './pages/SchemaBuilder';
 import Home from './pages/Home';
 import StudentList from './pages/StudentList';
+import MarksheetEditor from './pages/MarkSheetEditor';
 
 
 // initial routing here
 export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f0f4ff] to-[#e0e7ff] text-gray-800 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
+      <div className="">
         <Router>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -24,6 +25,10 @@ export default function App() {
             <Route
               path="/schools/:schoolId/classes/:classId/schemas/:schemaId"
               element={<StudentList />}
+            />
+                <Route
+              path="/schools/:schoolId/classes/:classId/schemas/:schemaId/students/:studentId"
+              element={<MarksheetEditor />}
             />
           </Routes>
         </Router>

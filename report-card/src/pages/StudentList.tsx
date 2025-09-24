@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import MarksheetForm from "./MarksheetForm";
 import { db } from "../bd/db";
@@ -20,6 +20,7 @@ interface SavedEntry {
 }
 
 function StudentList() {
+  const navigate = useNavigate();
   const { schoolId, classId, schemaId } = useParams();
   const [savedEntries, setSavedEntries] = useState<SavedEntry[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -45,14 +46,17 @@ function StudentList() {
     setShowForm(false);
   };
 
+   const handlePrintClick = (studentId: string) => {
+    if (schoolId && classId && schemaId) {
+      navigate(`/schools/${schoolId}/classes/${classId}/schemas/${schemaId}/students/${studentId}`);
+    }
+  };
+
+
+  console.log({ savedEntries });
+
   return (
     <div className="flex flex-col">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
-        .font-sans {
-          font-family: 'Poppins', sans-serif;
-        }
-      `}</style>
       {/* Navbar */}
       <div className="bg-white shadow sticky top-0 z-10 px-6 py-6 flex justify-between items-center rounded-3xl">
         <div>
@@ -105,7 +109,7 @@ function StudentList() {
                 </div>
                 <p className="text-sm text-slate-500 mt-1">Roll No: {entry.student?.rollNo}</p>
                 <button
-                  onClick={() => console.log("Print", entry.id)}
+                  onClick={() => handlePrintClick(String(entry.student?.id))}
                   className="mt-4 self-end text-sm text-blue-600 font-semibold hover:underline"
                 >
                   🖨️ Print Marksheet
